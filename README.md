@@ -5,33 +5,24 @@ API REST construida con **Node.js (ES Modules), Express y PostgreSQL**. La base 
 ## 1. Requisitos
 
 - Node.js 20 o superior.
-- Docker Desktop con Docker Compose, o PostgreSQL 14+ instalado localmente.
+- PostgreSQL 14+ instalado localmente.
 - Un archivo CSV con encabezados compatibles con el esquema definido abajo.
 
-## 2. Levantar PostgreSQL con Docker
+## 2. Preparar PostgreSQL
 
-1. Descomprime el proyecto y abre una terminal en su carpeta.
-2. Copia `.env.example` como `.env`.
-3. Si usarás Docker, define una contraseña segura para PostgreSQL. Por ejemplo, en PowerShell:
-   ```powershell
-   $env:POSTGRES_PASSWORD="una_clave_segura"
-   docker compose up -d
+1. Instala PostgreSQL 14 o superior y comprueba que el servicio esté corriendo.
+2. Crea la base de datos `polizas` (por ejemplo, desde SQL Shell (psql) o pgAdmin):
+   ```sql
+   CREATE DATABASE polizas;
    ```
-   En Linux/macOS:
-   ```bash
-   export POSTGRES_PASSWORD='una_clave_segura'
-   docker compose up -d
+3. Copia `.env.example` como `.env` y ajusta la conexión a tus credenciales:
+   ```env
+   DATABASE_URL=postgres://postgres:tu_clave@localhost:5432/polizas
+   DB_SSL=false
+   PORT=3000
    ```
-4. Docker crea la base `polizas` y ejecuta `sql/schema.sql` en la primera inicialización del volumen.
 
-La URL de conexión en `.env` debe coincidir con tus credenciales:
-```env
-DATABASE_URL=postgres://postgres:una_clave_segura@localhost:5432/polizas
-DB_SSL=false
-PORT=3000
-```
-
-> Si el volumen de Docker ya existía, PostgreSQL no vuelve a ejecutar automáticamente los scripts de inicialización. Para aplicar/verificar el esquema, ejecuta `npm run db:init`. Para borrar la base de datos persistida y recrearla desde cero, `docker compose down -v` elimina permanentemente los datos del volumen.
+> `npm run db:init` crea las tablas (`sql/schema.sql`) y se puede ejecutar varias veces sin dañar los datos. Para empezar de cero, ejecuta `DROP TABLE items_importacion, importaciones;` y vuelve a correr `npm run db:init`.
 
 ## 3. Instalar y ejecutar el backend
 
@@ -74,7 +65,7 @@ npm run csv:import
 - Si vuelves a importar el mismo archivo, no inserta de nuevo un ítem idéntico. Si el mismo correlativo tiene datos de cabecera diferentes, cancela la carga.
 - El CSV se lee en streaming; no se carga entero en memoria.
 - El importador termina con error (exit 1) y mensaje claro si falta el archivo, si el encabezado no tiene todas las columnas o si el archivo no trae filas de datos.
-- En el repositorio se incluyen `data/importaciones.csv` (datos de ejemplo) y `data/importaciones-con-error.csv` (para demostrar el `ROLLBACK`), de modo que un clon limpio puede importar de inmediato.
+- Los CSV no se versionan (`data/*.csv` está en `.gitignore`) porque contienen datos reales de pólizas. Coloca tu archivo en `data/importaciones.csv` antes de importar.
 
 **Importante:** los encabezados deben corresponder exactamente a los nombres indicados. Si tu exportación usa otras grafías (por ejemplo `tipo_unidad_medida` con acentos o encabezados con espacios), normalízalos antes de importar o adapta el importador. Guarda el CSV en UTF-8.
 
@@ -189,10 +180,11 @@ curl "http://localhost:3000/api/v1/estadisticas/por-aduana"
 
 - `polizas.insomnia.json`: colección para importar en Insomnia (Application → Import) con los 5 endpoints y casos de error (400/404). La variable `base` apunta a `http://localhost:4000`; si tu `PORT` es otro, cámbiala en *Manage Environments*.
 - `sql/demo-queries.sql`: consultas para mostrar en pgAdmin/psql que los datos y la relación 1-N están en PostgreSQL.
-- `data/importaciones-con-error.csv`: CSV con una fecha inválida (`2023-02-30`) para demostrar el `ROLLBACK`:
+- Para demostrar el `ROLLBACK`: copia tu CSV, cambia una fecha por una inválida (por ejemplo `2023-02-30`) y ejecuta:
   ```powershell
-  $env:CSV_PATH="./data/importaciones-con-error.csv"; npm run csv:import; Remove-Item Env:CSV_PATH
+  $env:CSV_PATH="./data/prueba-con-error.csv"; npm run csv:import; Remove-Item Env:CSV_PATH
   ```
+  La importación se cancela y el conteo de pólizas en la base no cambia.
 
 ## 12. Mejoras propuestas
 

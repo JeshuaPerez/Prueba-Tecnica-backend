@@ -92,7 +92,7 @@ Al levantar el proyecto contra un PostgreSQL real y probar endpoint por endpoint
 
 Probé el repo recién clonado, contra una base temporal y con CSV de casos límite. Encontré y corregí:
 
-1. **El CSV no estaba en Git** (`.gitignore` lo excluía), así que `csv:import` fallaba con un stack trace. **Fix:** se versionan los CSV de ejemplo y el importador valida que el archivo exista.
+1. **El CSV no estaba en Git** (`.gitignore` lo excluía), así que `csv:import` fallaba con un stack trace. **Fix:** el importador valida que el archivo exista y da un mensaje claro. Los CSV siguen sin versionarse porque contienen datos reales.
 2. **Un archivo vacío "tenía éxito"** con 0 filas. **Fix:** ahora falla y hace `ROLLBACK`.
 3. **Encabezado incorrecto** daba un error engañoso ("campo vacío"). **Fix:** se valida el encabezado y se listan las columnas faltantes.
 4. **JSON malformado** respondía 400 con código `INTERNAL_ERROR` y el mensaje del parser. **Fix:** código `INVALID_JSON` con mensaje propio.
