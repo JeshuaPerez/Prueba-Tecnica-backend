@@ -107,9 +107,12 @@ try {
     const exists = await client.query(
       `SELECT id FROM items_importacion
        WHERE importacion_id = $1 AND sac = $2 AND descripcion = $3 AND pais = $4
-         AND tipo_unidad_medida = $5 AND cantidad_fraccion = $6
-         AND tasa_dai = $7 AND valor_dai = $8 AND valor_cif_uds = $9
-         AND tasa_cif_cantidad_fraccion = $10 LIMIT 1`,
+         AND tipo_unidad_medida = $5
+         -- Se castea al mismo tipo de la columna para comparar el valor ya redondeado por PostgreSQL.
+         AND cantidad_fraccion = $6::numeric(20,6)
+         AND tasa_dai = $7::numeric(12,6) AND valor_dai = $8::numeric(20,6)
+         AND valor_cif_uds = $9::numeric(20,6)
+         AND tasa_cif_cantidad_fraccion = $10::numeric(20,8) LIMIT 1`,
       [p.id, data.sac, data.descripcion, data.pais, data.unidad, data.cantidad, data.tasaDai, data.valorDai, data.cif, data.tasaCif]
     );
     if (exists.rowCount === 0) {

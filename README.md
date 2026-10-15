@@ -182,3 +182,34 @@ curl "http://localhost:3000/api/v1/estadisticas/por-aduana"
 - Para conexiones remotas, activa TLS (`DB_SSL=true`) y configura certificados según el proveedor.
 - Añade autenticación/autorización si la API no debe ser pública.
 - Antes de producción, añade pruebas automatizadas, límites de tasa, logging estructurado y monitoreo.
+
+## 11. Demostración rápida
+
+- `polizas.postman_collection.json`: colección para importar en Postman con los 5 endpoints y casos de error (400/404).
+- `sql/consultas-demo.sql`: consultas para mostrar en pgAdmin/psql que los datos y la relación 1-N están en PostgreSQL.
+- `data/importaciones-con-error.csv`: CSV con una fecha inválida (`2023-02-30`) para demostrar el `ROLLBACK`:
+  ```powershell
+  $env:CSV_PATH="./data/importaciones-con-error.csv"; npm run csv:import; Remove-Item Env:CSV_PATH
+  ```
+
+## 12. Mejoras propuestas
+
+**Modularización**
+- Separar por módulo de dominio en vez de por tipo de archivo: `src/modules/importaciones/` y `src/modules/estadisticas/`, cada uno con sus `routes`, `controller`, `service` y `repository`. Hoy las rutas de estadísticas viven en `importaciones.routes.js`.
+- Extraer el armado de `pagination` (repetido en `list` y `getBySac`) a una función utilitaria.
+- Reutilizar el pool y las validaciones de `src/` dentro de `scripts/import-csv.js`, que hoy crea su propio pool.
+- Unificar el `json_build_object` de ítems (repetido 3 veces en el repositorio) en una sola constante.
+
+**Base de datos**
+- `idx_importaciones_correlativo` es redundante: la restricción `UNIQUE` ya crea un índice sobre `correlativo`.
+- Migraciones versionadas (node-pg-migrate o Knex) en lugar de un único `schema.sql`.
+- Columna `numero_linea` para permitir partidas idénticas legítimas dentro de una póliza.
+
+**Calidad**
+- Pruebas automatizadas: unitarias de validadores y servicios, de integración de endpoints con Jest + Supertest contra una BD de prueba.
+- Validación con un esquema (Zod/Joi) en lugar de validaciones manuales.
+- Importador en lotes (`INSERT` multi-fila o `COPY`) para CSV grandes; hoy hace 2-3 consultas por fila.
+- El contador `rejected` del importador nunca cambia (siempre 0): implementar el modo reporte o quitarlo.
+
+**Producción**
+- Autenticación (JWT/API key), rate limiting, logging estructurado (pino) y documentación OpenAPI/Swagger.

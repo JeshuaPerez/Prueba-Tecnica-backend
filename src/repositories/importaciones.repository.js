@@ -1,7 +1,7 @@
 import { pool } from '../config/db.js';
 
 const ITEM_COLUMNS = `
-  i.id AS item_id, i.sac, i.descripcion, i.pais, i.tipo_unidad_medida,
+  i.id AS item_id, i.importacion_id, i.sac, i.descripcion, i.pais, i.tipo_unidad_medida,
   i.cantidad_fraccion, i.tasa_dai, i.valor_dai, i.valor_cif_uds,
   i.tasa_cif_cantidad_fraccion
 `;
