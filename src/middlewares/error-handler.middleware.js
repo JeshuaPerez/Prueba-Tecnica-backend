@@ -1,4 +1,4 @@
-import { AppError } from '../utils/AppError.js';
+import { AppError } from '../utils/app-error.js';
 
 export function notFoundHandler(req, res, next) {
   next(new AppError(`Ruta no encontrada: ${req.method} ${req.originalUrl}`, 404, 'ROUTE_NOT_FOUND'));
@@ -7,7 +7,7 @@ export function notFoundHandler(req, res, next) {
 export function errorHandler(error, req, res, next) {
   if (res.headersSent) return next(error);
 
-  // Errores comunes de PostgreSQL se convierten a respuestas seguras.
+  // Códigos SQLSTATE de PostgreSQL traducidos a 4xx, sin exponer el detalle interno de la base.
   const pgErrors = {
     '23505': [409, 'CONFLICT', 'El registro ya existe.'],
     '23503': [400, 'FOREIGN_KEY_VIOLATION', 'La referencia indicada no existe.'],
@@ -22,6 +22,7 @@ export function errorHandler(error, req, res, next) {
     return res.status(statusCode).json({ error: { code, message } });
   }
 
+  // Cualquier otro error: 500 por defecto; en producción se oculta el mensaje real.
   const statusCode = error.statusCode ?? 500;
   const body = {
     error: {

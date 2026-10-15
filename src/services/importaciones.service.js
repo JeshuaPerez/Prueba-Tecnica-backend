@@ -1,6 +1,7 @@
 import { ImportacionesRepository } from '../repositories/importaciones.repository.js';
-import { AppError } from '../utils/AppError.js';
+import { AppError } from '../utils/app-error.js';
 
+// El servicio decide qué es un error de negocio (404); el repositorio solo consulta.
 const repository = new ImportacionesRepository();
 
 export class ImportacionesService {

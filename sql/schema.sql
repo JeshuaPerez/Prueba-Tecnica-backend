@@ -1,5 +1,4 @@
--- Base de datos: polizas
--- Una póliza puede contener múltiples partidas SAC; se normaliza en dos tablas.
+-- Cabecera de la póliza. Un correlativo = una póliza; sus partidas viven en items_importacion (relación 1-N).
 CREATE TABLE IF NOT EXISTS importaciones (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     correlativo VARCHAR(40) NOT NULL UNIQUE,
@@ -14,14 +13,16 @@ CREATE TABLE IF NOT EXISTS importaciones (
     CONSTRAINT regimen_no_vacio CHECK (BTRIM(tipo_regimen) <> '')
 );
 
+-- Detalle: una fila por partida SAC. Si se borra la póliza, sus ítems se borran en cascada.
 CREATE TABLE IF NOT EXISTS items_importacion (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     importacion_id BIGINT NOT NULL REFERENCES importaciones(id) ON DELETE CASCADE,
-    -- SAC se guarda como texto para conservar ceros a la izquierda y su formato exacto.
+    -- SAC como texto: es un código, no una cantidad, y debe conservar ceros iniciales.
     sac VARCHAR(32) NOT NULL,
     descripcion TEXT NOT NULL,
     pais VARCHAR(120) NOT NULL,
     tipo_unidad_medida VARCHAR(10) NOT NULL,
+    -- NUMERIC y no FLOAT: los valores monetarios deben sumarse sin error binario.
     cantidad_fraccion NUMERIC(20,6) NOT NULL CHECK (cantidad_fraccion >= 0),
     tasa_dai NUMERIC(12,6) NOT NULL CHECK (tasa_dai >= 0),
     valor_dai NUMERIC(20,6) NOT NULL CHECK (valor_dai >= 0),
@@ -34,6 +35,7 @@ CREATE TABLE IF NOT EXISTS items_importacion (
     CONSTRAINT unidad_medida_valida CHECK (tipo_unidad_medida IN ('PIEZAS', 'KG', 'M2'))
 );
 
+-- Índices para los filtros y ordenamientos de la API (fecha, aduana, SAC, país, FK).
 CREATE INDEX IF NOT EXISTS idx_importaciones_fecha ON importaciones(fecha_declaracion DESC);
 CREATE INDEX IF NOT EXISTS idx_importaciones_aduana ON importaciones(aduana);
 CREATE INDEX IF NOT EXISTS idx_importaciones_correlativo ON importaciones(correlativo);
@@ -41,7 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_items_sac ON items_importacion(sac);
 CREATE INDEX IF NOT EXISTS idx_items_pais ON items_importacion(pais);
 CREATE INDEX IF NOT EXISTS idx_items_importacion_id ON items_importacion(importacion_id);
 
--- Actualiza updated_at cuando se modifica la cabecera.
+-- Mantiene updated_at al día sin depender de que la aplicación lo envíe.
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN

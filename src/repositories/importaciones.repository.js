@@ -1,5 +1,6 @@
 import { pool } from '../config/db.js';
 
+// Columnas compartidas para armar cabecera e ítems; los NUMERIC salen como string para no perder precisión.
 const ITEM_COLUMNS = `
   i.id AS item_id, i.importacion_id, i.sac, i.descripcion, i.pais, i.tipo_unidad_medida,
   i.cantidad_fraccion, i.tasa_dai, i.valor_dai, i.valor_cif_uds,
@@ -11,6 +12,8 @@ const HEADER_COLUMNS = `
 `;
 
 export class ImportacionesRepository {
+  // Una sola consulta con json_agg trae cada póliza con sus ítems y evita el problema de N+1.
+  // La paginación es por póliza, no por ítem, por eso el LIMIT se aplica sobre el GROUP BY.
   async list({ limit, offset }) {
     const [rows, count] = await Promise.all([
       pool.query(
@@ -53,6 +56,7 @@ export class ImportacionesRepository {
     return result.rows[0] ?? null;
   }
 
+  // INNER JOIN: solo pólizas que contienen el SAC. Los ítems devueltos son los de ese SAC.
   async findBySac(sac, { limit, offset }) {
     const [rows, count] = await Promise.all([
       pool.query(
@@ -76,6 +80,7 @@ export class ImportacionesRepository {
     return { rows: rows.rows, total: count.rows[0].total };
   }
 
+  // COUNT(DISTINCT p.id) porque una póliza con varios ítems del mismo país debe contarse una sola vez.
   async statsByCountry() {
     const result = await pool.query(
       `SELECT i.pais,
@@ -92,6 +97,7 @@ export class ImportacionesRepository {
     return result.rows;
   }
 
+  // LEFT JOIN para que una aduana aparezca aunque sus pólizas aún no tengan ítems.
   async statsByCustoms() {
     const result = await pool.query(
       `SELECT p.aduana,

@@ -8,6 +8,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL, ssl: pro
 
 try {
   await client.connect();
+  // schema.sql usa IF NOT EXISTS, por lo que se puede ejecutar varias veces sin dañar datos.
   const schema = await readFile(new URL('../sql/schema.sql', import.meta.url), 'utf8');
   await client.query(schema);
   console.log('Esquema de polizas creado/verificado correctamente.');

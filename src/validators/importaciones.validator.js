@@ -1,5 +1,6 @@
-import { AppError } from '../utils/AppError.js';
+import { AppError } from '../utils/app-error.js';
 
+// Se validan como texto de dígitos (no Number): son identificadores y pueden tener ceros a la izquierda.
 const CORRELATIVO = /^[0-9]{1,40}$/;
 const SAC = /^[0-9]{1,32}$/;
 

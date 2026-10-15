@@ -3,9 +3,10 @@ import { env } from './env.js';
 
 const { Pool, types } = pg;
 
-// OID 1082 = tipo DATE. Se devuelve tal cual ('YYYY-MM-DD') en vez de convertirlo a Date de JS,
-// que le aplica la zona horaria y lo muestra como '2023-08-30T06:00:00.000Z'.
+// DATE (OID 1082) se devuelve como texto 'YYYY-MM-DD'.
+// Con el parser por defecto pg crea un Date de JS y la zona horaria (UTC-6) corre la fecha.
 types.setTypeParser(1082, (value) => value);
+// Un único pool compartido: reutiliza conexiones entre peticiones.
 export const pool = new Pool({
   connectionString: env.databaseUrl,
   ssl: env.dbSsl ? { rejectUnauthorized: true } : false,

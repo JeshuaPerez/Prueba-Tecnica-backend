@@ -186,7 +186,7 @@ curl "http://localhost:3000/api/v1/estadisticas/por-aduana"
 ## 11. Demostración rápida
 
 - `polizas.postman_collection.json`: colección para importar en Postman con los 5 endpoints y casos de error (400/404).
-- `sql/consultas-demo.sql`: consultas para mostrar en pgAdmin/psql que los datos y la relación 1-N están en PostgreSQL.
+- `sql/demo-queries.sql`: consultas para mostrar en pgAdmin/psql que los datos y la relación 1-N están en PostgreSQL.
 - `data/importaciones-con-error.csv`: CSV con una fecha inválida (`2023-02-30`) para demostrar el `ROLLBACK`:
   ```powershell
   $env:CSV_PATH="./data/importaciones-con-error.csv"; npm run csv:import; Remove-Item Env:CSV_PATH

@@ -1,5 +1,6 @@
 import 'dotenv/config';
 
+// Falla al arrancar si falta configuración crítica, en vez de fallar en la primera consulta.
 const required = ['DATABASE_URL'];
 for (const key of required) {
   if (!process.env[key]) throw new Error(`Falta la variable de entorno obligatoria: ${key}`);

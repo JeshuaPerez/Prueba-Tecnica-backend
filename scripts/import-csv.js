@@ -12,6 +12,7 @@ const requiredHeaders = [
   'sac', 'descripcion', 'pais', 'tipo_unidad_medida', 'cantidad_fraccion',
   'tasa_dai', 'valor_dai', 'valor_cif_uds', 'tasa_cif_cantidad_fraccion'
 ];
+// Normaliza variantes de unidad al conjunto que acepta el CHECK de la base.
 const unitMap = new Map([
   ['PIEZA', 'PIEZAS'], ['PIEZAS', 'PIEZAS'], ['PIECE', 'PIEZAS'],
   ['KG', 'KG'], ['KGS', 'KG'], ['KILOGRAMO', 'KG'], ['KILOGRAMOS', 'KG'],
@@ -28,7 +29,8 @@ function decimal(row, key, line, { min = 0 } = {}) {
   if (!/^-?\d+(\.\d+)?$/.test(raw)) throw new Error(`Fila ${line}: "${key}" no es un número decimal válido.`);
   const n = Number(raw);
   if (!Number.isFinite(n) || n < min) throw new Error(`Fila ${line}: "${key}" debe ser >= ${min}.`);
-  return raw; // se envía como string para no perder precisión decimal
+  // Se devuelve el texto original, no Number, para no introducir error de coma flotante antes de llegar a NUMERIC.
+  return raw;
 }
 function dateOnly(value, line) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new Error(`Fila ${line}: fecha_declaracion debe tener formato YYYY-MM-DD.`);
@@ -68,12 +70,14 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : false
 });
+// Un solo cliente dedicado: BEGIN/COMMIT deben ejecutarse sobre la misma conexión.
 const client = await pool.connect();
 let line = 1;
 let imported = 0;
 let rejected = 0;
 
 try {
+  // Todo o nada: una fila inválida revierte la carga completa para no dejar estadísticas a medias.
   await client.query('BEGIN');
   const parser = createReadStream(csvPath).pipe(parse({
     bom: true,
@@ -86,7 +90,7 @@ try {
   for await (const row of parser) {
     line += 1;
     const data = validateRow(row, line);
-    // La póliza es la cabecera. Si el CSV repite correlativo, verifica que los datos de cabecera coincidan.
+    // Upsert de cabecera: si el correlativo ya existe lo reutiliza y abajo se comprueba que sus datos coincidan.
     const header = await client.query(
       `INSERT INTO importaciones (correlativo, fecha_declaracion, aduana, tipo_regimen, tipo_cambio_dolar)
        VALUES ($1, $2, $3, $4, $5)
@@ -103,12 +107,12 @@ try {
       throw new Error(`Fila ${line}: el correlativo ${data.correlativo} ya existe con datos de cabecera diferentes.`);
     }
 
-    // Idempotencia: evita duplicar exactamente el mismo item si se ejecuta de nuevo el CSV.
+    // Idempotencia: no reinserta un ítem idéntico si se corre el CSV otra vez.
+    // Los parámetros se castean al tipo de la columna; sin eso 670.780029296875 no iguala al valor ya redondeado por PostgreSQL.
     const exists = await client.query(
       `SELECT id FROM items_importacion
        WHERE importacion_id = $1 AND sac = $2 AND descripcion = $3 AND pais = $4
          AND tipo_unidad_medida = $5
-         -- Se castea al mismo tipo de la columna para comparar el valor ya redondeado por PostgreSQL.
          AND cantidad_fraccion = $6::numeric(20,6)
          AND tasa_dai = $7::numeric(12,6) AND valor_dai = $8::numeric(20,6)
          AND valor_cif_uds = $9::numeric(20,6)
