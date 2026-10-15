@@ -23,6 +23,11 @@ export function errorHandler(error, req, res, next) {
   }
 
   // Cualquier otro error: 500 por defecto; en producción se oculta el mensaje real.
+  // body-parser marca el JSON inválido con este type; se responde sin filtrar el mensaje interno del parser.
+  if (error.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: { code: 'INVALID_JSON', message: 'El cuerpo de la petición no es un JSON válido.' } });
+  }
+
   const statusCode = error.statusCode ?? 500;
   const body = {
     error: {

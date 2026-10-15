@@ -1,4 +1,5 @@
 import { createReadStream } from 'node:fs';
+import { access } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parse } from 'csv-parse';
 import pg from 'pg';
@@ -6,6 +7,15 @@ import 'dotenv/config';
 
 const csvPath = resolve(process.env.CSV_PATH ?? './data/importaciones.csv');
 if (!process.env.DATABASE_URL) throw new Error('Define DATABASE_URL en .env');
+
+// Se comprueba antes de abrir la conexión para dar un mensaje claro en vez de un stack trace de ENOENT.
+try {
+  await access(csvPath);
+} catch {
+  console.error(`No se encontró el archivo CSV: ${csvPath}
+Colócalo en data/importaciones.csv o define CSV_PATH en .env.`);
+  process.exit(1);
+}
 
 const requiredHeaders = [
   'correlativo', 'fecha_declaracion', 'aduana', 'tipo_regimen', 'tipo_cambio_dolar',
@@ -81,7 +91,13 @@ try {
   await client.query('BEGIN');
   const parser = createReadStream(csvPath).pipe(parse({
     bom: true,
-    columns: (headers) => headers.map((h) => h.trim()),
+    columns: (headers) => {
+      const found = headers.map((h) => h.trim());
+      // Se valida el encabezado completo para reportar columnas faltantes, no un campo "vacío" de la fila 2.
+      const missing = requiredHeaders.filter((h) => !found.includes(h));
+      if (missing.length) throw new Error(`Encabezado inválido: faltan las columnas ${missing.join(', ')}.`);
+      return found;
+    },
     skip_empty_lines: true,
     trim: true,
     relax_column_count: false
@@ -130,6 +146,8 @@ try {
     }
     imported += 1;
   }
+  // Un archivo sin filas no es un éxito: probablemente es el archivo equivocado o una exportación vacía.
+  if (imported === 0) throw new Error('el archivo no contiene filas de datos.');
   await client.query('COMMIT');
   console.log(`Importación finalizada. Filas procesadas: ${imported}. Filas rechazadas: ${rejected}.`);
 } catch (error) {

@@ -88,6 +88,20 @@ Al levantar el proyecto contra un PostgreSQL real y probar endpoint por endpoint
 
 ---
 
+## 9. Auditoría final: lo que una demo en un clon limpio reveló
+
+Probé el repo recién clonado, contra una base temporal y con CSV de casos límite. Encontré y corregí:
+
+1. **El CSV no estaba en Git** (`.gitignore` lo excluía), así que `csv:import` fallaba con un stack trace. **Fix:** se versionan los CSV de ejemplo y el importador valida que el archivo exista.
+2. **Un archivo vacío "tenía éxito"** con 0 filas. **Fix:** ahora falla y hace `ROLLBACK`.
+3. **Encabezado incorrecto** daba un error engañoso ("campo vacío"). **Fix:** se valida el encabezado y se listan las columnas faltantes.
+4. **JSON malformado** respondía 400 con código `INTERNAL_ERROR` y el mensaje del parser. **Fix:** código `INVALID_JSON` con mensaje propio.
+5. **Orden de correlativos como texto** (`90010` antes que `9002`). **Fix:** `ORDER BY LENGTH(correlativo), correlativo`.
+
+**Lección:** probar siempre desde un clon limpio; en mi máquina todo funcionaba porque tenía archivos que Git no.
+
+---
+
 ## Cómo usé la IA (resumen)
 - ✅ Para contrastar alternativas (tipos de datos, transacciones, diseño de rutas).
 - ✅ Como revisor: me ayudó a entender los errores al probar.

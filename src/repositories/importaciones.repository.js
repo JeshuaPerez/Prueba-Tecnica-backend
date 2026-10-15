@@ -14,6 +14,7 @@ const HEADER_COLUMNS = `
 export class ImportacionesRepository {
   // Una sola consulta con json_agg trae cada póliza con sus ítems y evita el problema de N+1.
   // La paginación es por póliza, no por ítem, por eso el LIMIT se aplica sobre el GROUP BY.
+  // Orden de correlativos: primero por longitud y luego por texto, que equivale al orden numérico sin perder ceros.
   async list({ limit, offset }) {
     const [rows, count] = await Promise.all([
       pool.query(
@@ -30,7 +31,7 @@ export class ImportacionesRepository {
            SELECT ${ITEM_COLUMNS} FROM items_importacion i
          ) x ON x.importacion_id = p.id
          GROUP BY p.id
-         ORDER BY p.fecha_declaracion DESC, p.correlativo
+         ORDER BY p.fecha_declaracion DESC, LENGTH(p.correlativo), p.correlativo
          LIMIT $1 OFFSET $2`,
         [limit, offset]
       ),
@@ -71,7 +72,7 @@ export class ImportacionesRepository {
          JOIN items_importacion i ON i.importacion_id = p.id
          WHERE i.sac = $1
          GROUP BY p.id
-         ORDER BY p.fecha_declaracion DESC, p.correlativo
+         ORDER BY p.fecha_declaracion DESC, LENGTH(p.correlativo), p.correlativo
          LIMIT $2 OFFSET $3`,
         [sac, limit, offset]
       ),

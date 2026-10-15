@@ -73,6 +73,8 @@ npm run csv:import
 - La operación corre en una transacción: si encuentra una fila inválida, revierte toda la importación para evitar una carga parcial.
 - Si vuelves a importar el mismo archivo, no inserta de nuevo un ítem idéntico. Si el mismo correlativo tiene datos de cabecera diferentes, cancela la carga.
 - El CSV se lee en streaming; no se carga entero en memoria.
+- El importador termina con error (exit 1) y mensaje claro si falta el archivo, si el encabezado no tiene todas las columnas o si el archivo no trae filas de datos.
+- En el repositorio se incluyen `data/importaciones.csv` (datos de ejemplo) y `data/importaciones-con-error.csv` (para demostrar el `ROLLBACK`), de modo que un clon limpio puede importar de inmediato.
 
 **Importante:** los encabezados deben corresponder exactamente a los nombres indicados. Si tu exportación usa otras grafías (por ejemplo `tipo_unidad_medida` con acentos o encabezados con espacios), normalízalos antes de importar o adapta el importador. Guarda el CSV en UTF-8.
 
