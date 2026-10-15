@@ -1,0 +1,37 @@
+import { AppError } from '../utils/AppError.js';
+
+export function notFoundHandler(req, res, next) {
+  next(new AppError(`Ruta no encontrada: ${req.method} ${req.originalUrl}`, 404, 'ROUTE_NOT_FOUND'));
+}
+
+export function errorHandler(error, req, res, next) {
+  if (res.headersSent) return next(error);
+
+  // Errores comunes de PostgreSQL se convierten a respuestas seguras.
+  const pgErrors = {
+    '23505': [409, 'CONFLICT', 'El registro ya existe.'],
+    '23503': [400, 'FOREIGN_KEY_VIOLATION', 'La referencia indicada no existe.'],
+    '23514': [400, 'CHECK_CONSTRAINT', 'Uno o más valores incumplen las reglas de negocio.'],
+    '22P02': [400, 'INVALID_VALUE', 'Uno o más valores tienen un formato incorrecto.'],
+    '22007': [400, 'INVALID_DATE', 'La fecha no tiene un formato válido.'],
+    '23502': [400, 'REQUIRED_FIELD', 'Falta un campo obligatorio.']
+  };
+
+  if (pgErrors[error.code]) {
+    const [statusCode, code, message] = pgErrors[error.code];
+    return res.status(statusCode).json({ error: { code, message } });
+  }
+
+  const statusCode = error.statusCode ?? 500;
+  const body = {
+    error: {
+      code: error.code ?? 'INTERNAL_ERROR',
+      message: statusCode >= 500 && process.env.NODE_ENV === 'production'
+        ? 'Ocurrió un error interno.'
+        : error.message ?? 'Ocurrió un error interno.'
+    }
+  };
+  if (error.details) body.error.details = error.details;
+  if (process.env.NODE_ENV !== 'production' && statusCode >= 500) body.error.stack = error.stack;
+  res.status(statusCode).json(body);
+}
