@@ -32,13 +32,12 @@ CREATE TABLE IF NOT EXISTS items_importacion (
     CONSTRAINT sac_no_vacio CHECK (BTRIM(sac) <> ''),
     CONSTRAINT descripcion_no_vacia CHECK (BTRIM(descripcion) <> ''),
     CONSTRAINT pais_no_vacio CHECK (BTRIM(pais) <> ''),
-    CONSTRAINT unidad_medida_valida CHECK (tipo_unidad_medida IN ('PIEZAS', 'KG', 'M2'))
+    CONSTRAINT unidad_medida_valida CHECK (tipo_unidad_medida IN ('PIEZAS', 'KG', 'M2', 'M', 'M3', 'L', 'PARES', 'JUEGOS'))
 );
 
 -- Índices para los filtros y ordenamientos de la API (fecha, aduana, SAC, país, FK).
 CREATE INDEX IF NOT EXISTS idx_importaciones_fecha ON importaciones(fecha_declaracion DESC);
 CREATE INDEX IF NOT EXISTS idx_importaciones_aduana ON importaciones(aduana);
-CREATE INDEX IF NOT EXISTS idx_importaciones_correlativo ON importaciones(correlativo);
 CREATE INDEX IF NOT EXISTS idx_items_sac ON items_importacion(sac);
 CREATE INDEX IF NOT EXISTS idx_items_pais ON items_importacion(pais);
 CREATE INDEX IF NOT EXISTS idx_items_importacion_id ON items_importacion(importacion_id);

@@ -105,5 +105,5 @@ Probé el repo recién clonado, contra una base temporal y con CSV de casos lím
 ## Cómo usé la IA (resumen)
 - ✅ Para contrastar alternativas (tipos de datos, transacciones, diseño de rutas).
 - ✅ Como revisor: me ayudó a entender los errores al probar.
-- ✅ Para generar datos de prueba y la colección de Postman.
+- ✅ Para generar datos de prueba y la colección de Insomnia.
 - ❌ No acepté sugerencias sin entenderlas ni probarlas: cada decisión de arriba la puedo explicar.

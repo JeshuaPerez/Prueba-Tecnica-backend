@@ -126,7 +126,7 @@ Devuelve número de pólizas, número de ítems, CIF total y DAI total agrupados
 - `importacion_id`: FK a `importaciones`, con borrado en cascada.
 - `sac`: `VARCHAR`, preserva ceros iniciales.
 - `descripcion`, `pais`: texto obligatorio.
-- `tipo_unidad_medida`: restringida a `PIEZAS`, `KG`, `M2`.
+- `tipo_unidad_medida`: restringida a `PIEZAS`, `KG`, `M2`, `M`, `M3`, `L`, `PARES`, `JUEGOS` (el importador convierte `KILOGRAMOS`, `METROS CUADRADOS`, etc.).
 - Cantidad, tasas y valores: `NUMERIC` con decimales y restricciones no negativas.
 
 ### Decisiones de negocio
@@ -187,7 +187,7 @@ curl "http://localhost:3000/api/v1/estadisticas/por-aduana"
 
 ## 11. Demostración rápida
 
-- `polizas.postman_collection.json`: colección para importar en Postman con los 5 endpoints y casos de error (400/404).
+- `polizas.insomnia.json`: colección para importar en Insomnia (Application → Import) con los 5 endpoints y casos de error (400/404).
 - `sql/demo-queries.sql`: consultas para mostrar en pgAdmin/psql que los datos y la relación 1-N están en PostgreSQL.
 - `data/importaciones-con-error.csv`: CSV con una fecha inválida (`2023-02-30`) para demostrar el `ROLLBACK`:
   ```powershell
@@ -203,7 +203,6 @@ curl "http://localhost:3000/api/v1/estadisticas/por-aduana"
 - Unificar el `json_build_object` de ítems (repetido 3 veces en el repositorio) en una sola constante.
 
 **Base de datos**
-- `idx_importaciones_correlativo` es redundante: la restricción `UNIQUE` ya crea un índice sobre `correlativo`.
 - Migraciones versionadas (node-pg-migrate o Knex) en lugar de un único `schema.sql`.
 - Columna `numero_linea` para permitir partidas idénticas legítimas dentro de una póliza.
 
@@ -211,7 +210,7 @@ curl "http://localhost:3000/api/v1/estadisticas/por-aduana"
 - Pruebas automatizadas: unitarias de validadores y servicios, de integración de endpoints con Jest + Supertest contra una BD de prueba.
 - Validación con un esquema (Zod/Joi) en lugar de validaciones manuales.
 - Importador en lotes (`INSERT` multi-fila o `COPY`) para CSV grandes; hoy hace 2-3 consultas por fila.
-- El contador `rejected` del importador nunca cambia (siempre 0): implementar el modo reporte o quitarlo.
+- Modo reporte en el importador: cargar las filas válidas y generar un archivo con las rechazadas (hoy una fila inválida cancela toda la carga).
 
 **Producción**
 - Autenticación (JWT/API key), rate limiting, logging estructurado (pino) y documentación OpenAPI/Swagger.

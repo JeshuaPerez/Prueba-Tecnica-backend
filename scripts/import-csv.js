@@ -22,11 +22,16 @@ const requiredHeaders = [
   'sac', 'descripcion', 'pais', 'tipo_unidad_medida', 'cantidad_fraccion',
   'tasa_dai', 'valor_dai', 'valor_cif_uds', 'tasa_cif_cantidad_fraccion'
 ];
-// Normaliza variantes de unidad al conjunto que acepta el CHECK de la base.
+// Normaliza las unidades que trae el CSV real (p. ej. KILOGRAMOS, METROS CUADRADOS) al código corto que acepta el CHECK.
 const unitMap = new Map([
   ['PIEZA', 'PIEZAS'], ['PIEZAS', 'PIEZAS'], ['PIECE', 'PIEZAS'],
   ['KG', 'KG'], ['KGS', 'KG'], ['KILOGRAMO', 'KG'], ['KILOGRAMOS', 'KG'],
-  ['M2', 'M2'], ['M²', 'M2'], ['M^2', 'M2']
+  ['M2', 'M2'], ['M²', 'M2'], ['M^2', 'M2'], ['METROS CUADRADOS', 'M2'],
+  ['M', 'M'], ['METRO', 'M'], ['METROS', 'M'],
+  ['M3', 'M3'], ['METROS CUBICOS', 'M3'], ['METROS CÚBICOS', 'M3'],
+  ['L', 'L'], ['LITRO', 'L'], ['LITROS', 'L'],
+  ['PAR', 'PARES'], ['PARES', 'PARES'],
+  ['JUEGO', 'JUEGOS'], ['JUEGOS', 'JUEGOS']
 ]);
 
 function required(row, key, line) {
@@ -56,7 +61,7 @@ function validateRow(row, line) {
   if (!/^\d{1,32}$/.test(sac)) throw new Error(`Fila ${line}: sac debe ser numérico y tener hasta 32 dígitos.`);
   const unitOriginal = required(row, 'tipo_unidad_medida', line).toUpperCase().trim();
   const unit = unitMap.get(unitOriginal);
-  if (!unit) throw new Error(`Fila ${line}: unidad "${unitOriginal}" no permitida. Use PIEZAS, KG o M2.`);
+  if (!unit) throw new Error(`Fila ${line}: unidad "${unitOriginal}" no permitida. Use PIEZAS, KG, M2, M, M3, L, PARES o JUEGOS.`);
   return {
     correlativo,
     fecha: dateOnly(required(row, 'fecha_declaracion', line), line),
@@ -84,7 +89,6 @@ const pool = new Pool({
 const client = await pool.connect();
 let line = 1;
 let imported = 0;
-let rejected = 0;
 
 try {
   // Todo o nada: una fila inválida revierte la carga completa para no dejar estadísticas a medias.
@@ -149,7 +153,7 @@ try {
   // Un archivo sin filas no es un éxito: probablemente es el archivo equivocado o una exportación vacía.
   if (imported === 0) throw new Error('el archivo no contiene filas de datos.');
   await client.query('COMMIT');
-  console.log(`Importación finalizada. Filas procesadas: ${imported}. Filas rechazadas: ${rejected}.`);
+  console.log(`Importación finalizada. Filas procesadas: ${imported}.`);
 } catch (error) {
   await client.query('ROLLBACK');
   console.error(`Importación cancelada en la fila aproximada ${line}: ${error.message}`);

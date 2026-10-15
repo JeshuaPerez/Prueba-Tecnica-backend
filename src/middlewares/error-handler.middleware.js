@@ -37,7 +37,6 @@ export function errorHandler(error, req, res, next) {
         : error.message ?? 'Ocurrió un error interno.'
     }
   };
-  if (error.details) body.error.details = error.details;
   if (process.env.NODE_ENV !== 'production' && statusCode >= 500) body.error.stack = error.stack;
   res.status(statusCode).json(body);
 }

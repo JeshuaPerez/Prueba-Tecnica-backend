@@ -28,11 +28,11 @@ FROM items_importacion i
 GROUP BY i.pais
 ORDER BY cif_total DESC;
 
--- Prueba negativa: la unidad "LITROS" incumple unidad_medida_valida, por lo que debe fallar.
+-- Prueba negativa: la unidad "GALONES" incumple unidad_medida_valida, por lo que debe fallar.
 -- Se deja comentada para no romper la ejecución del archivo completo.
 -- INSERT INTO items_importacion (importacion_id, sac, descripcion, pais, tipo_unidad_medida,
 --   cantidad_fraccion, tasa_dai, valor_dai, valor_cif_uds, tasa_cif_cantidad_fraccion)
--- VALUES (1, '123', 'PRUEBA', 'GT', 'LITROS', 1, 0, 0, 0, 0);
+-- VALUES (1, '123', 'PRUEBA', 'GT', 'GALONES', 1, 0, 0, 0, 0);
 
 -- Índices existentes; deben verse los de fecha, aduana, SAC, país y la FK.
 SELECT indexname, tablename FROM pg_indexes WHERE schemaname = 'public';
