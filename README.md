@@ -187,7 +187,7 @@ curl "http://localhost:3000/api/v1/estadisticas/por-aduana"
 
 ## 11. Demostración rápida
 
-- `polizas.insomnia.json`: colección para importar en Insomnia (Application → Import) con los 5 endpoints y casos de error (400/404).
+- `polizas.insomnia.json`: colección para importar en Insomnia (Application → Import) con los 5 endpoints y casos de error (400/404). La variable `base` apunta a `http://localhost:4000`; si tu `PORT` es otro, cámbiala en *Manage Environments*.
 - `sql/demo-queries.sql`: consultas para mostrar en pgAdmin/psql que los datos y la relación 1-N están en PostgreSQL.
 - `data/importaciones-con-error.csv`: CSV con una fecha inválida (`2023-02-30`) para demostrar el `ROLLBACK`:
   ```powershell
